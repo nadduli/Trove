@@ -30,5 +30,5 @@ Trove is a minimalistic API for storing, retrieving, updating, and deleting post
 ### **Installation**  
 1. **Clone the repository**  
    ```sh
-   git clone https://github.com/yourusername/trove.git
+   git clone https://github.com/yourusername/Trove.git
    cd Trove
