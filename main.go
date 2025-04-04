@@ -5,19 +5,20 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	"github.com/nadduli/Trove/controllers"
+	"github.com/nadduli/Trove/initializers"
 )
 
 func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	initializers.LoadEnv()
+	initializers.ConnectToDB()
 }
 
 func main() {
 	router := gin.Default()
 	router.GET("/", healthCheck)
+	router.POST("/posts", controllers.CreatePost)
+	router.GET("/posts", controllers.PostsIndex)
 
 	port := os.Getenv("PORT")
 	if port == "" {
