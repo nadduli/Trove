@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -109,5 +110,46 @@ func UpdatePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Post updated successfully",
 		"data":    post,
+	})
+}
+
+func DeletePost(c *gin.Context) {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid post ID format",
+		})
+		return
+	}
+
+	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
+		var post models.Post
+		if err := tx.First(&post, "id = ?", id).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Delete(&post).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Post not found",
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Failed to delete post",
+				"details": err.Error(),
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Post deleted successfully",
 	})
 }
