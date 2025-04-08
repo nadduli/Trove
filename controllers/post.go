@@ -1,10 +1,14 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/nadduli/Trove/dto"
 	"github.com/nadduli/Trove/initializers"
 	"github.com/nadduli/Trove/models"
+	"gorm.io/gorm"
 )
 
 func CreatePost(c *gin.Context) {
@@ -33,5 +37,77 @@ func PostsIndex(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "retrieved all posts successfully",
 		"posts":   posts,
+	})
+}
+
+func GetPost(c *gin.Context) {
+	id := c.Param("id")
+	var post models.Post
+
+	result := initializers.DB.First(&post, "id = ?", id)
+
+	if result.Error != nil {
+		c.JSON(404, gin.H{
+			"error": "post not found",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"post": post,
+	})
+}
+
+func UpdatePost(c *gin.Context) {
+
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid post ID format",
+		})
+		return
+	}
+
+	var body dto.UpdatePostDto
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request body",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	var post models.Post
+	result := initializers.DB.First(&post, "id = ?", id)
+	if result.Error != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Post not found",
+		})
+		return
+	}
+
+	updates := models.Post{
+		Title:   body.Title,
+		Content: body.Content,
+	}
+
+	err := initializers.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&post).Updates(updates).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update post",
+		})
+		return
+	}
+
+	initializers.DB.First(&post, "id = ?", id)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Post updated successfully",
+		"data":    post,
 	})
 }

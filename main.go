@@ -19,6 +19,8 @@ func main() {
 	router.GET("/", healthCheck)
 	router.POST("/posts", controllers.CreatePost)
 	router.GET("/posts", controllers.PostsIndex)
+	router.GET("/posts/:id", controllers.GetPost)
+	router.PUT("/posts/:id", controllers.UpdatePost)
 
 	port := os.Getenv("PORT")
 	if port == "" {
